@@ -1,6 +1,9 @@
 
 using Microsoft.EntityFrameworkCore;
+using SchoolApp.Configuration;
 using SchoolApp.Data;
+using SchoolApp.Repositories;
+using Serilog;
 
 namespace SchoolApp
 {
@@ -10,9 +13,13 @@ namespace SchoolApp
         {
             var builder = WebApplication.CreateBuilder(args);
             var connString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<SchoolApp.Data.SchoolAppDbContext>(options =>
-                options.UseSqlServer(connString));
+            connString = connString!.Replace("{DB_PASS}", Environment.GetEnvironmentVariable("DB_PASS") ?? "");
 
+            builder.Services.AddDbContext<SchoolAppDbContext>(options => options.UseSqlServer(connString));
+            builder.Services.AddRepositories();
+            builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MapperConfig>());
+            builder.Host.UseSerilog((ctx, lc) =>
+                lc.ReadFrom.Configuration(ctx.Configuration));
 
             // Add services to the container.
 
