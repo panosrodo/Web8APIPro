@@ -1,9 +1,12 @@
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using SchoolApp.Configuration;
 using SchoolApp.Data;
 using SchoolApp.Repositories;
 using Serilog;
+using System.Text;
 
 namespace SchoolApp
 {
@@ -20,6 +23,30 @@ namespace SchoolApp
             builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MapperConfig>());
             builder.Host.UseSerilog((ctx, lc) =>
                 lc.ReadFrom.Configuration(ctx.Configuration));
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                var jwtSettings = builder.Configuration.GetSection("Authentication");
+                options.IncludeErrorDetails = true;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = "https://localhost:5001",
+
+                    ValidateAudience = true,
+                    ValidAudience = "https://localhost:5001",
+
+                    ValidateLifetime = true,    // ensure not expired
+
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!))
+                };
+            });
 
             // Add services to the container.
 
@@ -38,7 +65,7 @@ namespace SchoolApp
             }
 
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
