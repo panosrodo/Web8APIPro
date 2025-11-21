@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.IdentityModel.Tokens;
+using SchoolApp.Core.Enums;
 using SchoolApp.Core.Filters;
 using SchoolApp.Data;
 using SchoolApp.DTO;
@@ -6,8 +8,11 @@ using SchoolApp.Exceptions;
 using SchoolApp.Models;
 using SchoolApp.Repositories;
 using Serilog;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq.Expressions;
 using System.Resources;
+using System.Security.Claims;
+using System.Text;
 
 namespace SchoolApp.Services
 {
@@ -114,6 +119,33 @@ namespace SchoolApp.Services
                     credentials.Username, e.Message);
             }
             return user;
+        }
+        public string CreateuserToken(int userId, string username, string email, UserRole userRole,
+            string appSecurityKey)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(appSecurityKey));
+            var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claimsInfo = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Name, username),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Role, userRole.ToString())
+            };
+
+            var jwtSecurityToken = new JwtSecurityToken(
+                issuer: "https://localhost:5001",
+                audience: "https://localhost:5001",
+                claims: claimsInfo,
+                expires: DateTime.UtcNow.AddHours(3),
+                signingCredentials: signingCredentials
+            );
+
+            // Serialize the token to a string
+            var userToken = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+
+            return userToken;
         }
     }
 }
