@@ -9,6 +9,7 @@ using SchoolApp.Configuration;
 using SchoolApp.Data;
 using SchoolApp.Helpers;
 using SchoolApp.Repositories;
+using SchoolApp.Services;
 using Serilog;
 using System.ComponentModel;
 using System.Text;
@@ -26,6 +27,8 @@ namespace SchoolApp
 
             builder.Services.AddDbContext<SchoolAppDbContext>(options => options.UseSqlServer(connString));
             builder.Services.AddRepositories();
+            builder.Services.AddScoped<IApplicationService, ApplicationService>();
+
             builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MapperConfig>());
             builder.Host.UseSerilog((ctx, lc) =>
                 lc.ReadFrom.Configuration(ctx.Configuration));
