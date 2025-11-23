@@ -126,7 +126,8 @@ namespace SchoolApp
 
             app.UseHttpsRedirection();
 
-            app.UseCors("AllowAll");
+            app.UseCors("LocalClient");
+
             app.UseAuthentication();
             app.UseAuthorization();
 
