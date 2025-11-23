@@ -10,7 +10,6 @@ using SchoolApp.Repositories;
 using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq.Expressions;
-using System.Resources;
 using System.Security.Claims;
 using System.Text;
 
@@ -108,7 +107,7 @@ namespace SchoolApp.Services
                 {
                     throw new EntityNotAuthorizedException("User", "Bad Credentials");
                     // see Resources/Strings.resx for localization
-                    // throw new EntityNotAuthorizedException("User", Resources.ErrorMessages.BadCredentials);
+                    //throw new EntityNotAuthorizedException("User", Resources.ErrorMessages.BadCredentials); 
                 }
 
                 logger.LogInformation("User with username {Username} found", credentials.Username!);
@@ -120,7 +119,8 @@ namespace SchoolApp.Services
             }
             return user;
         }
-        public string CreateuserToken(int userId, string username, string email, UserRole userRole,
+
+        public string CreateUserToken(int userId, string username, string email, UserRole userRole,
             string appSecurityKey)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(appSecurityKey));
@@ -146,6 +146,50 @@ namespace SchoolApp.Services
             var userToken = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
 
             return userToken;
+        }
+
+        public async Task<UserReadOnlyDTO> GetUserByIdAsync(int id)
+        {
+            User? user = null;
+
+            try
+            {
+                user = await unitOfWork.UserRepository.GetAsync(id);
+                if (user == null)
+                {
+                    throw new EntityNotFoundException("User", "User with id: " + id + " not found");
+                }
+                logger.LogInformation("User found with ID: {Id}", id);
+                return mapper.Map<UserReadOnlyDTO>(user);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                logger.LogError("Error retrieving user by ID: {Id}. {Message}", id, ex.Message);
+                throw;
+            }
+        }
+
+        public async Task<UserTeacherReadOnlyDTO?> GetUserTeacherByUsernameAsync(string username)
+        {
+            UserTeacherReadOnlyDTO? userTeacherReadOnlyDTO = null;
+            try
+            {
+                userTeacherReadOnlyDTO = await unitOfWork.UserRepository.GetUserTeacherAsync(username);
+                if (userTeacherReadOnlyDTO == null)
+                {
+                    throw new EntityNotFoundException("User", "User with username: " + username + " not found");
+                    //return null;
+                }
+                logger.LogInformation("User found with username={Username}", username);
+
+                return userTeacherReadOnlyDTO;
+            }
+            catch (EntityNotFoundException e)
+            {
+                logger.LogError("Error retrieving user by username: {Username}. {Message}", username, e.Message);
+                throw;
+            }
+            //return userTeacherReadOnlyDTO;
         }
     }
 }

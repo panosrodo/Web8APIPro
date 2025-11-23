@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SchoolApp.Data;
+using SchoolApp.DTO;
 using SchoolApp.Models;
 using SchoolApp.Security;
 using System.Linq.Expressions;
@@ -52,6 +53,28 @@ namespace SchoolApp.Repositories
                 .ToListAsync(); // εκτελείται
 
             return new PaginatedResult<User>(data, totalRecords, pageNumber, pageSize);
+        }
+
+        public async Task<UserTeacherReadOnlyDTO?> GetUserTeacherAsync(string? username)
+        {
+            var userTeacher = await context.Users
+                .Where(u => u.Username == username)
+                .Include(u => u.Teacher)
+                .Select(u => new UserTeacherReadOnlyDTO
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Password = u.Password,
+                    Email = u.Email,
+                    Firstname = u.Firstname,
+                    Lastname = u.Lastname,
+                    UserRole = u.UserRole.ToString()!,
+                    PhoneNumber = u.Teacher!.PhoneNumber,
+                    Institution = u.Teacher.Institution
+                })
+                .FirstOrDefaultAsync();
+            Console.WriteLine("UserTeacher: " + userTeacher!.Firstname + ", " + userTeacher.Institution);
+            return userTeacher;
         }
     }
 }
